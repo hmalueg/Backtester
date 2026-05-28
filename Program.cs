@@ -1,24 +1,28 @@
-﻿var program = new Program();
-program.Run();
+﻿using Backtester;
+using System;
+using System.Threading;
+using System.Windows.Forms;
 
-public partial class Program
+static class Program
 {
-    private Backtester.Loader _loader;
+    private static Backtester.Loader loader_;
 
-    public Program()
+    /// <summary>
+    /// The main entry point for the application.
+    /// </summary>
+    [STAThread]
+    static void Main()
     {
-        _loader = new Backtester.Loader();
-    }
+        Console.WriteLine("Application started.");
+        loader_ = new Backtester.Loader();
 
-    public void Run()
-    {
-        Console.WriteLine("Application started. Press Ctrl+C to exit.");
-        _loader.Start();
-
-        // Keep the program running until user stops it
-        while (true)
+        try
         {
-            System.Threading.Thread.Sleep(100);
+            Application.Run();
+        }
+        finally
+        {
+            Application.Exit();
         }
     }
 }

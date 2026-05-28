@@ -2,9 +2,18 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <TargetFramework>net47</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CTS.T4API" Version="4.7.72.459" />
+    <PackageReference Include="CTS.T4ChartDataAPI" Version="4.7.72.459" />
+    <PackageReference Include="CTS.T4Data" Version="4.7.72.465" />
+    <PackageReference Include="CTS.T4Definitions" Version="4.7.72.465" />
+    <PackageReference Include="CTS.T4Messages" Version="4.7.72.465" />
+    <PackageReference Include="CTS.T4TraceListener" Version="4.7.72.465" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.81" />
+  </ItemGroup>
 
 </Project>
