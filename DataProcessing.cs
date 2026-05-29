@@ -41,7 +41,7 @@ namespace Backtester
     internal static class DataProcessing
     {
         private const int TrainYearCount = 3;
-        private const int WindowCount = 5;
+        private const int WindowCount = 7;
 
         // Walk-forward split: each window has TrainYearCount calendar years of training
         // data followed by the next calendar year as validation. The window slides forward

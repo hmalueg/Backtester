@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 using T4;
@@ -43,9 +46,10 @@ namespace Backtester
         private readonly Host host_;
 
         private ChartDataSeries data_;
+        private ChartDataSeries intraday_data_;
         private Contract contract_;
 
-        private const int DAYS = 365 * 9;
+        private const int DAYS = 365 * 6;
 
         public Loader()
         {
@@ -77,13 +81,72 @@ namespace Backtester
             data_.LoadHistoricalChartData(DateTime.Now.AddDays(-DAYS), DateTime.Now);
         }
 
-        private void DataLoadComplete(object sender, DataLoadCompleteEventArgs args)
+        private void DataLoadComplete(object sender, DataLoadCompleteEventArgs e)
+        {
+            ChartDataArgs args = new ChartDataArgs();
+            args.SessionTimeRange = new SessionTimeRange(new SessionTime(8, 30, 0),new SessionTime(13, 20, 0));
+            args.AlignToSession = false;
+
+            intraday_data_ = new ChartDataSeries(contract_, args);
+            intraday_data_.DataLoadComplete += IntradayDataLoadComplete;
+            intraday_data_.LoadHistoricalChartData(DateTime.Now.AddDays(-DAYS), DateTime.Now);
+        }
+
+        private void IntradayDataLoadComplete(object sender, DataLoadCompleteEventArgs e)
         {
             List<TradeBar> tradeBars = ToDataPoints(data_.TradeBars);
             Dictionary<DateTime, Settlement> settlements = ToSettlements(data_.Settlements);
 
-            List<Window> trainingWindows = DataProcessing.Split(tradeBars, settlements);
-            Dictionary<int, Tuple<decimal, decimal>> result = ATR.Process(trainingWindows);
+            List<TradeBar> intradayBars = ToDataPoints(intraday_data_.TradeBars);
+            Dictionary<DateTime, TradeBar> intradayBarsByDate = new Dictionary<DateTime, TradeBar>();
+            foreach (TradeBar bar in intradayBars)
+            {
+                intradayBarsByDate[bar.TradeDate] = bar;
+            }
+
+            //WriteCsv(tradeBars, settlements, intradayBarsByDate,"C:\\Users\\haile\\git\\Backtester\\data\\soybean_oil_historical_data.csv");
+
+            //List<Window> trainingWindows = DataProcessing.Split(tradeBars, settlements);
+            //Dictionary<int, Tuple<decimal, decimal>> result = ATR.Process(trainingWindows);
+        }
+
+        private static void WriteCsv(
+            List<TradeBar> tradeBars,
+            Dictionary<DateTime, Settlement> settlements,
+            Dictionary<DateTime, TradeBar> intradayBars,
+            string path)
+        {
+            CultureInfo ci = CultureInfo.InvariantCulture;
+            using (StreamWriter writer = new StreamWriter(path))
+            {
+                writer.WriteLine("TradeDate,Open,High,Low,Close,Settlement,IntradayOpen,IntradayHigh,IntradayLow,IntradayClose");
+                foreach (TradeBar bar in tradeBars.OrderBy(b => b.TradeDate))
+                {
+                    string settle = settlements.TryGetValue(bar.TradeDate, out Settlement s) ? s.Price.ToString(ci) : string.Empty;
+
+                    string iOpen = string.Empty, iHigh = string.Empty, iLow = string.Empty, iClose = string.Empty;
+                    if (intradayBars.TryGetValue(bar.TradeDate, out TradeBar ib))
+                    {
+                        iOpen = ib.Open.ToString(ci);
+                        iHigh = ib.High.ToString(ci);
+                        iLow = ib.Low.ToString(ci);
+                        iClose = ib.Close.ToString(ci);
+                    }
+
+                    writer.WriteLine(string.Join(",",
+                        bar.TradeDate.ToString("yyyy-MM-dd", ci),
+                        bar.Open.ToString(ci),
+                        bar.High.ToString(ci),
+                        bar.Low.ToString(ci),
+                        bar.Close.ToString(ci),
+                        settle,
+                        iOpen,
+                        iHigh,
+                        iLow,
+                        iClose));
+                }
+            }
+            Console.WriteLine("Wrote CSV: " + path);
         }
 
         #region convert to user created objects for easy testing

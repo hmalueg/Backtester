@@ -10,9 +10,9 @@ namespace Backtester
 {
     internal static class ATR
     {
-        // different lambda for different market conditions ??
+        private static readonly decimal[] lambdas = { 0.80m, 0.90m, 0.929m, 0.95m };
+        private static readonly Func<decimal, decimal, decimal, decimal> CalcRange = EwmaATR;
 
-        internal static readonly decimal[] lambdas = { 0.80m, 0.90m, 0.929m, 0.95m };
 
         public static Dictionary<int, Tuple<decimal, decimal>> Process(List<Window> windows)
         {
@@ -46,7 +46,7 @@ namespace Backtester
                     {
                         trainMSEs.Add(CalcSquaredError(atr, train[i].TrueRange()));
                     }
-                    atr = CalcATR(atr, train[i].TrueRange(), lambda);
+                    atr = CalcRange(atr, train[i].TrueRange(), lambda);
                 }
 
                 mseByLambda.Add(Tuple.Create(lambda, trainMSEs.Average()));
@@ -63,7 +63,7 @@ namespace Backtester
             foreach (DataPoint dataPoint in validation)
             {
                 validationMSEs.Add(CalcSquaredError(atr, dataPoint.TrueRange()));
-                atr = CalcATR(atr, dataPoint.TrueRange(), lambda);
+                atr = CalcRange(atr, dataPoint.TrueRange(), lambda);
             }
 
             return  validationMSEs.Average();
@@ -74,7 +74,7 @@ namespace Backtester
             decimal atr = 0.0m;
             foreach (DataPoint dataPoint in train)
             {
-                atr = CalcATR(atr, dataPoint.TrueRange(), lambda);
+                atr = CalcRange(atr, dataPoint.TrueRange(), lambda);
             }
             return atr;
         }
@@ -84,8 +84,10 @@ namespace Backtester
             return (atr - trueRange) * (atr - trueRange);
         }
 
-        private static decimal CalcATR(decimal atr, decimal trueRange, decimal lambda)
+
+        private static decimal EwmaATR(decimal atr, decimal trueRange, decimal lambda)
         {
+            // use the mean tracking formula instead?
             return (1 - lambda) * trueRange + lambda * atr;
         }
 
@@ -94,4 +96,5 @@ namespace Backtester
             return Math.Log(2.0) / -Math.Log(lambda);
         }
     }
+
 }
